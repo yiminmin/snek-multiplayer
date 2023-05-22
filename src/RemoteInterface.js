@@ -15,7 +15,7 @@ const net = require('net');
  */
 class RemoteInterface {
   constructor() {
-    this.clients = []
+    this.clients = [] // Maintains a list of connected clients
     this.launchServer()
   }
 
@@ -59,6 +59,18 @@ class RemoteInterface {
     this.clients.push(client)
     this.resetIdleTimer(client, MAX_IDLE_TIMEOUT / 2)
 
+    //update roadcasting Message to Client
+    // Loop through all the clients and send a message to each one except the new client
+    this.clients.forEach(c => {
+      if (c !== client) {
+        c.write('A new client has joined\n') // Send a message to other clients when a new client joins
+      }
+    });
+
+     // Log the current number of connected players
+    console.log(`Current number of connected players: ${this.clients.length}`);
+
+
     if (this.newClientHandler) this.newClientHandler(client)
 
     client.on('data', this.handleClientData.bind(this, client))
@@ -73,6 +85,20 @@ class RemoteInterface {
 
   handleClientEnded(client) {
     if (client.idleTimer) clearTimeout(client.idleTimer)
+
+    // remove the client that has ended
+    // Filter out the client that has ended from the list of clients
+    this.clients = this.clients.filter(c => c !== client);
+
+     // Broadcast to other clients
+    // Loop through all remaining clients and send a message to each one when a client leaves
+    this.clients.forEach(c => {
+      c.write('A client has left\n') // Send a message to other clients when a client leaves
+    });
+
+    // Log the current number of connected players
+    console.log(`Current number of connected players: ${this.clients.length}`);
+
     if (this.clientEndHandler) this.clientEndHandler(client)
   }
 
